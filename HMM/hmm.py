@@ -1,4 +1,5 @@
 import string
+from jiwer import wer
 
 # five elements for HMM
 
@@ -68,12 +69,72 @@ def Viterbit(obs, states, s_pro, t_pro, e_pro):
             # print '%s: %s'%(curr_pro[s], path[s]) # different path and their probability
     return max_path
 
+'''
+def wer(r, h):
+    """
+    Calculation of WER with Levenshtein distance.
+
+    Works only for iterables up to 254 elements (uint8).
+    O(nm) time ans space complexity.
+
+    Parameters
+    ----------
+    r : list
+    h : list
+
+    Returns
+    -------
+    int
+
+    Examples
+    --------
+    -->>> wer("who is there".split(), "is there".split())
+    1
+    -->>> wer("who is there".split(), "".split())
+    3
+    -->>> wer("".split(), "who is there".split())
+    3
+    """
+    # initialisation
+    import numpy
+    d = numpy.zeros((len(r)+1)*(len(h)+1), dtype=numpy.uint8)
+    d = d.reshape((len(r)+1, len(h)+1))
+    for i in range(len(r)+1):
+        for j in range(len(h)+1):
+            if i == 0:
+                d[0][j] = j
+            elif j == 0:
+                d[i][0] = i
+
+    # computation
+    for i in range(1, len(r)+1):
+        for j in range(1, len(h)+1):
+            if r[i-1] == h[j-1]:
+                d[i][j] = d[i-1][j-1]
+            else:
+                substitution = d[i-1][j-1] + 1
+                insertion    = d[i][j-1] + 1
+                deletion     = d[i-1][j] + 1
+                d[i][j] = min(substitution, insertion, deletion)
+
+    return d[len(r)][len(h)]
+'''
+
+'''
+def wer(ref, hyp):
+    sub = 0
+    for i in range(0, min(len(ref), len(hyp))):
+        if ref[i] != hyp[i]:
+            sub += 1
+    insDel = abs(len(ref) - len(hyp))
+    return (sub + insDel) / len(ref)
+'''
 
 if __name__ == '__main__':
     validation_split = 0.2
     training_size = 137860 * 0.8
     validation_size = 1 - training_size
-    obs = ['new', 'jersey', 'is', 'sometimes', 'quiet', 'during', 'autumn']
+    #obs = ['new', 'jersey', 'is', 'sometimes', 'quiet', 'during', 'autumn']
     #obs = ['normal', 'cold', 'dizzy']
     #tokens, tokens2 = []
     #states.add('END')
@@ -82,8 +143,6 @@ if __name__ == '__main__':
     for enLine in open('small_vocab_en.txt', encoding='utf8'):
         ln += 1
 
-        #if ln > training_size:
-        #    break
 
         frLine = fo.readline()
 
@@ -167,4 +226,14 @@ if __name__ == '__main__':
     for k, v in emission_probability.items():
         print('E ', len(v))
 
-    print(Viterbit(obs, states, start_probability, transition_probability, emission_probability))
+    ct = 0
+    fo = open('small_vocab_fr.txt', encoding='utf8')
+    for enLine in open('small_vocab_en.txt', encoding='utf8'):
+        if ct == 20:
+            break
+        fo.readline()
+        frTokens = frLine.strip().split(' ')
+        enTokens = enLine.strip().split(' ')
+        ans = Viterbit(enTokens, states, start_probability, transition_probability, emission_probability)
+        print(ans)
+        print(wer(frTokens, ans))
