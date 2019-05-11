@@ -138,11 +138,11 @@ def generate():
 
 
 if __name__=='__main__':
-    train_markov_model()
-    generate()
-    print('\nSummary:')
-    print('Training Data Size: ', training_words, ' words')
-    print('Training Time: ', round(training_time * 1000, 6), ' ms')
-    #print('Text Generation Data Size: ', number_of_words, ' words')
-    print('Text Generation Time: ', round(generation_time * 1000, 6), ' ms')
-    #print('Accuracy: ', accuracy * 100, '%')
+	train_markov_model()
+	generate()
+	print('\nSummary:')
+	print('Training Data Size: ', training_words, ' words')
+	print('Training Time: ', round(training_time * 1000, 6), ' ms')
+	#print('Text Generation Data Size: ', number_of_words, ' words')
+	print('Text Generation Time: ', round(generation_time * 1000, 6), ' ms')
+	#print('Accuracy: ', accuracy * 100, '%')
