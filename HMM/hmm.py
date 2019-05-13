@@ -1,5 +1,6 @@
 import string
 from jiwer import wer
+import time
 
 # five elements for HMM
 
@@ -138,6 +139,9 @@ if __name__ == '__main__':
     #obs = ['normal', 'cold', 'dizzy']
     #tokens, tokens2 = []
     #states.add('END')
+
+    start_time = time.time()
+
     fo = open('small_vocab_fr.txt', encoding='utf8')
     ln = 0
     for enLine in open('small_vocab_en.txt', encoding='utf8'):
@@ -185,7 +189,7 @@ if __name__ == '__main__':
             if i <= enTokensLength - 1:
                 emission_probability[frTokens[i]][enTokens[i]] = emission_probability[frTokens[i]].get(enTokens[i], 0) + 1
 
-
+    training_time = time.time() - start_time
 
     for state in states:
         if state not in start_probability.keys():
@@ -216,24 +220,49 @@ if __name__ == '__main__':
     #print(transition_probability)
     #print(emission_probability)
 
-    print(len(observations))
-    print(len(states))
-    print(len(start_probability))
-    print(len(transition_probability))
-    for k, v in transition_probability.items():
-        print('T ', len(v))
-    print(len(emission_probability))
-    for k, v in emission_probability.items():
-        print('E ', len(v))
+    #print(len(observations))
+    #print(len(states))
+    #print(len(start_probability))
+    #print(len(transition_probability))
+    #for k, v in transition_probability.items():
+    #    print('T ', len(v))
+    #print(len(emission_probability))
+    #for k, v in emission_probability.items():
+    #    print('E ', len(v))
+
+    start_time = time.time()
 
     ct = 0
+    validation_acc_sum = 0
     fo = open('small_vocab_fr.txt', encoding='utf8')
     for enLine in open('small_vocab_en.txt', encoding='utf8'):
-        if ct == 20:
+
+
+
+        if ct < training_size:
+            ct += 1
             break
+
+        #print('Validation ', ct)
+
         fo.readline()
         frTokens = frLine.strip().split(' ')
         enTokens = enLine.strip().split(' ')
         ans = Viterbit(enTokens, states, start_probability, transition_probability, emission_probability)
-        print(ans)
-        print(wer(frTokens, ans))
+        #print(ans)
+        werx = wer(frTokens, ans)
+        wacc = 1 - werx
+        if wacc < 0:
+            wacc = 0
+        #print(wer)
+        validation_acc_sum += wacc
+
+        ct += 1
+
+    validation_accuracy = validation_acc_sum / ct
+
+    validation_time = time.time() - start_time
+
+    print(validation_accuracy)
+    print('Training Time: ', training_time * 1000, ' ms')
+    print('Validation Time: ', validation_time * 1000, ' ms')
