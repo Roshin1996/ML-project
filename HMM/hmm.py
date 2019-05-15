@@ -1,27 +1,7 @@
-import string
 from jiwer import wer
 import time
 
-# five elements for HMM
-
-'''
-states = ('Healthy', 'Fever')
-
-observations = ('normal', 'cold', 'dizzy')
-
-start_probability = {'Healthy': 0.6, 'Fever': 0.4}
-
-transition_probability = {
-    'Healthy': {'Healthy': 0.7, 'Fever': 0.3},
-    'Fever': {'Healthy': 0.4, 'Fever': 0.6},
-}
-
-emission_probability = {
-    'Healthy': {'normal': 0.5, 'cold': 0.4, 'dizzy': 0.1},
-    'Fever': {'normal': 0.1, 'cold': 0.3, 'dizzy': 0.6},
-}
-'''
-
+# data structures to implement HMM
 observations = set()
 states = set()
 start_probability = dict()
@@ -29,6 +9,7 @@ transition_probability = dict()
 emission_probability = dict()
 
 
+# convert list of counts into list of probability
 def list2probabilitydict(given_list):
     probability_dict = {}
     given_list_length = len(given_list)
@@ -70,66 +51,8 @@ def Viterbit(obs, states, s_pro, t_pro, e_pro):
             # print '%s: %s'%(curr_pro[s], path[s]) # different path and their probability
     return max_path
 
-'''
-def wer(r, h):
-    """
-    Calculation of WER with Levenshtein distance.
 
-    Works only for iterables up to 254 elements (uint8).
-    O(nm) time ans space complexity.
 
-    Parameters
-    ----------
-    r : list
-    h : list
-
-    Returns
-    -------
-    int
-
-    Examples
-    --------
-    -->>> wer("who is there".split(), "is there".split())
-    1
-    -->>> wer("who is there".split(), "".split())
-    3
-    -->>> wer("".split(), "who is there".split())
-    3
-    """
-    # initialisation
-    import numpy
-    d = numpy.zeros((len(r)+1)*(len(h)+1), dtype=numpy.uint8)
-    d = d.reshape((len(r)+1, len(h)+1))
-    for i in range(len(r)+1):
-        for j in range(len(h)+1):
-            if i == 0:
-                d[0][j] = j
-            elif j == 0:
-                d[i][0] = i
-
-    # computation
-    for i in range(1, len(r)+1):
-        for j in range(1, len(h)+1):
-            if r[i-1] == h[j-1]:
-                d[i][j] = d[i-1][j-1]
-            else:
-                substitution = d[i-1][j-1] + 1
-                insertion    = d[i][j-1] + 1
-                deletion     = d[i-1][j] + 1
-                d[i][j] = min(substitution, insertion, deletion)
-
-    return d[len(r)][len(h)]
-'''
-
-'''
-def wer(ref, hyp):
-    sub = 0
-    for i in range(0, min(len(ref), len(hyp))):
-        if ref[i] != hyp[i]:
-            sub += 1
-    insDel = abs(len(ref) - len(hyp))
-    return (sub + insDel) / len(ref)
-'''
 
 if __name__ == '__main__':
     validation_split = 0.2
@@ -203,22 +126,94 @@ if __name__ == '__main__':
             if ob not in value.keys():
                 emission_probability[key][ob] = 0
 
+    goodS = 0
+    goodT = 0
+    goodS2 = 0
+    goodT2 = 0
+    goodE = 0
+    goodE2 = 0
 
+    for k, v in start_probability.items():
+        if v > 0:
+            #print('goodS')
+            #print(v)
+            goodS += 1
+
+    for k, v in transition_probability.items():
+        for a, b in v.items():
+            if b > 0:
+                #print('goodT')
+                #print(b)
+                goodT += 1
+
+    for k, v in emission_probability.items():
+        for a, b in v.items():
+            if b > 0:
+                # print('goodT')
+                #print(b)
+                goodE += 1
+
+    #print(start_probability)
+    #print(transition_probability)
+
+    #exit(0)
+
+    #normalize into prob dist
     start_probability_total = sum(start_probability.values())
     for key, value in start_probability.items():
         start_probability[key] = value / start_probability_total
 
     for prev_word, next_word_list in transition_probability.items():
-        transition_probability[prev_word] = list2probabilitydict(next_word_list)
+        s = sum(next_word_list.values())
+        if s == 0:
+            continue
+        for k, v in next_word_list.items():
+            next_word_list[k] = v / s
+        #transition_probability[prev_word] = list2probabilitydict(next_word_list)
+        transition_probability[prev_word] = next_word_list
 
     for prev_word, next_word_list in emission_probability.items():
-        emission_probability[prev_word] = list2probabilitydict(next_word_list)
+        s = sum(next_word_list.values())
+        if s == 0:
+            continue
+        for k, v in next_word_list.items():
+            next_word_list[k] = v / s
+        #emission_probability[prev_word] = list2probabilitydict(next_word_list)
+        emission_probability[prev_word] = next_word_list
+
+    for k, v in start_probability.items():
+        if v > 0:
+            #print('goodS')
+            #print(v)
+            goodS2 += 1
+
+    for k, v in transition_probability.items():
+        for a, b in v.items():
+            if b > 0:
+                #print('goodT')
+                #print(b)
+                goodT2 += 1
+
+    for k, v in emission_probability.items():
+        for a, b in v.items():
+            if b > 0:
+                #print('goodT')
+                #print(b)
+                goodE2 += 1
+
+    print(goodS, ' ', goodS2, ' ', goodT, ' ', goodT2, ' ', goodE, ' ', goodE2)
+
+    assert(goodS == goodS2)
+    assert(goodT == goodT2)
+    assert(goodE == goodE2)
 
     #print(observations)
     #print(states)
     #print(start_probability)
     #print(transition_probability)
     #print(emission_probability)
+
+    #exit(0)
 
     #print(len(observations))
     #print(len(states))
@@ -251,8 +246,9 @@ if __name__ == '__main__':
 
         #print('Validation ', ct)
 
-        fo.readline()
+        frLine = fo.readline()
         frTokens = frLine.strip().split(' ')
+        print(frTokens)
         enTokens = enLine.strip().split(' ')
         ans = Viterbit(enTokens, states, start_probability, transition_probability, emission_probability)
         #print(ans)
@@ -270,6 +266,9 @@ if __name__ == '__main__':
         totalWER += werx
 
         print(werx)
+        if werx < 1.0:
+            print(frTokens)
+            print(ans)
         #print(werx - len(frTokens))
         #print(werx - len(ans))
         print('----------')

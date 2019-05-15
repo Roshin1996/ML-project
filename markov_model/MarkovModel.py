@@ -71,6 +71,7 @@ def train_markov_model():
         initial_word[key] = value / initial_word_total
 
     for prev_word, next_word_list in second_word.items():
+        print(next_word_list)
         second_word[prev_word] = list2probabilitydict(next_word_list)
         #print(second_word[prev_word])
 
