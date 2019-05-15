@@ -234,13 +234,19 @@ if __name__ == '__main__':
 
     ct = 0
     validation_acc_sum = 0
+    minWER = 1000
+    maxWER = -1
+    totalWER = 0
     fo = open('small_vocab_fr.txt', encoding='utf8')
     for enLine in open('small_vocab_en.txt', encoding='utf8'):
 
+        print(ct)
 
+        #if ct < training_size:
+        #    ct += 1
+        #    continue
 
-        if ct < training_size:
-            ct += 1
+        if ct == 100:
             break
 
         #print('Validation ', ct)
@@ -250,19 +256,39 @@ if __name__ == '__main__':
         enTokens = enLine.strip().split(' ')
         ans = Viterbit(enTokens, states, start_probability, transition_probability, emission_probability)
         #print(ans)
+        #if ct == training_size:
+        #    print(frTokens)
+        #    print(ans)
         werx = wer(frTokens, ans)
-        wacc = 1 - werx
-        if wacc < 0:
-            wacc = 0
+
+        if werx < minWER:
+            minWER = werx
+
+        if werx > maxWER:
+            maxWER = werx
+
+        totalWER += werx
+
+        print(werx)
+        #print(werx - len(frTokens))
+        #print(werx - len(ans))
+        print('----------')
+        #wacc = 1 - werx
+        #if wacc < 0:
+        #    wacc = 0
         #print(wer)
-        validation_acc_sum += wacc
+        #validation_acc_sum += wacc
 
         ct += 1
 
-    validation_accuracy = validation_acc_sum / ct
+    #validation_accuracy = validation_acc_sum / ct
 
     validation_time = time.time() - start_time
 
-    print(validation_accuracy)
+    #print(validation_accuracy)
+
     print('Training Time: ', training_time * 1000, ' ms')
     print('Validation Time: ', validation_time * 1000, ' ms')
+    print('Min WER: ', minWER)
+    print('Max WER: ', maxWER)
+    print('Average WER: ', totalWER / 100)
