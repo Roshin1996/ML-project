@@ -1,46 +1,23 @@
-from pickle import load
-from numpy import array
-from numpy import argmax
+import pickle
+import numpy as np
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.models import load_model
 from nltk.translate.bleu_score import corpus_bleu
- 
-# load a clean dataset
-def load_clean_sentences(filename):
-	return load(open(filename, 'rb'))
- 
-# fit a tokenizer
-def create_tokenizer(lines):
-	tokenizer = Tokenizer()
-	tokenizer.fit_on_texts(lines)
-	return tokenizer
- 
-# max sentence length
-def max_length(lines):
-	return max(len(line.split()) for line in lines)
- 
-# encode and pad sequences
-def encode_sequences(tokenizer, length, lines):
-	# integer encode sequences
-	X = tokenizer.texts_to_sequences(lines)
-	# pad sequences with 0 values
-	X = pad_sequences(X, maxlen=length, padding='post')
-	return X
- 
-# map an integer to a word
-def word_for_id(integer, tokenizer):
+
+# map an intefr to a word
+def word_for_id(intefr, tokenizer):
 	for word, index in tokenizer.word_index.items():
-		if index == integer:
+		if index == intefr:
 			return word
 	return None
  
 # generate target given source sequence
 def predict_sequence(model, tokenizer, source):
 	prediction = model.predict(source, verbose=0)[0]
-	integers = [argmax(vector) for vector in prediction]
+	intefrs = [np.argmax(vector) for vector in prediction]
 	target = list()
-	for i in integers:
+	for i in intefrs:
 		word = word_for_id(i, tokenizer)
 		if word is None:
 			break
@@ -64,26 +41,17 @@ def evaluate_model(model, tokenizer, sources, raw_dataset):
 	print('BLEU-4: %f' % corpus_bleu(actual, predicted, weights=(0.25, 0.25, 0.25, 0.25)))
  
 # load datasets
-dataset = load_clean_sentences('english-french-both.pkl')
-train = load_clean_sentences('english-french-train.pkl')
-test = load_clean_sentences('english-french-test.pkl')
-# prepare english tokenizer
-eng_tokenizer = create_tokenizer(dataset[:, 0])
-eng_vocab_size = len(eng_tokenizer.word_index) + 1
-eng_length = max_length(dataset[:, 0])
-# prepare french tokenizer
-ger_tokenizer = create_tokenizer(dataset[:, 1])
-ger_vocab_size = len(ger_tokenizer.word_index) + 1
-ger_length = max_length(dataset[:, 1])
-# prepare data
-trainX = encode_sequences(ger_tokenizer, ger_length, train[:, 1])
-testX = encode_sequences(ger_tokenizer, ger_length, test[:, 1])
- 
-# load model
+dataset = pickle.load(open('data/full.pkl','rb'))
+train = pickle.load(open('data/train.pkl','rb'))
+test = pickle.load(open('data/test.pkl','rb'))
+
+eng_tokenizer,eng_vocab_size,eng_length=pickle.load(open('tokenizer/english_tokenizer.pkl','rb'))
+fr_tokenizer,fr_vocab_size,fr_length=pickle.load(open('tokenizer/french_tokenizer.pkl','rb'))
+
+trainX, testX = pickle.load(open('tokenizer/encoded_data.pkl','rb'))
+
 model = load_model('model.h5')
-# test on some training sequences
 print('train')
 evaluate_model(model, eng_tokenizer, trainX, train)
-# test on some test sequences
 print('test')
 evaluate_model(model, eng_tokenizer, testX, test)
